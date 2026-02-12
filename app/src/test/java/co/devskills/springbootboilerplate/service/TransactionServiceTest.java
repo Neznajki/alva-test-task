@@ -17,6 +17,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -40,21 +42,22 @@ public class TransactionServiceTest {
         transactionId = UUID.randomUUID();
     }
 
-    @Test
-    void createTransaction_ShouldSaveAndReturnResponse() {
+    @ParameterizedTest
+    @ValueSource(ints = {100, -50, 0})
+    void createTransaction_ShouldSaveAndReturnResponse(int amount) {
         TransactionRequest request = new TransactionRequest();
         request.setTransactionId(transactionId);
         request.setAccountId(accountId);
-        request.setAmount(100);
+        request.setAmount(amount);
 
-        TransactionEntity entity = new TransactionEntity(transactionId, accountId, 100, OffsetDateTime.now(ZoneOffset.UTC));
+        TransactionEntity entity = new TransactionEntity(transactionId, accountId, amount, OffsetDateTime.now(ZoneOffset.UTC));
         when(transactionRepository.save(any(TransactionEntity.class))).thenReturn(entity);
 
         TransactionResponse response = transactionService.createTransaction(request);
 
         assertEquals(transactionId, response.getTransactionId());
         assertEquals(accountId, response.getAccountId());
-        assertEquals(100, response.getAmount());
+        assertEquals(amount, response.getAmount());
     }
 
     @Test
