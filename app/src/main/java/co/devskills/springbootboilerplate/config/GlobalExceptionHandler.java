@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -51,5 +52,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
         log.debug("Method not allowed", e);
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body("Specified HTTP method not allowed.");
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<String> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+        log.debug("Content type not allowed", e);
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Specified content type not allowed.");
     }
 }

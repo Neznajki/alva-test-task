@@ -1,8 +1,8 @@
-package co.devskills.springbootboilerplate.dto.healt;
+package co.devskills.springbootboilerplate.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public record HealthCheckResponse (
+public record DescriptionResponse (
     @JsonProperty("description") String description
 ) {
 }

@@ -1,6 +1,6 @@
 package co.devskills.springbootboilerplate.controller;
 
-import co.devskills.springbootboilerplate.dto.healt.HealthCheckResponse;
+import co.devskills.springbootboilerplate.dto.DescriptionResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +12,7 @@ public class PingController {
 
     @GetMapping(value = "/ping")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<HealthCheckResponse> healthCheck(){
-        return ResponseEntity.ok(new HealthCheckResponse("The service is up and running"));
+    public ResponseEntity<DescriptionResponse> healthCheck(){
+        return ResponseEntity.ok(new DescriptionResponse("The service is up and running"));
     }
 }

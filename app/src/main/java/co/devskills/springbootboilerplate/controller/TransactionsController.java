@@ -25,7 +25,7 @@ public class TransactionsController {
         this.transactionService = transactionService;
     }
 
-    @PostMapping(value = "/transactions")
+    @PostMapping(value = "/transactions", consumes = "application/json")
     public ResponseEntity<TransactionResponse> create(@Valid @RequestBody TransactionRequest request) {
         TransactionResponse response = transactionService.create(TransactionRequestHelper.withGeneratedIdIfMissing(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

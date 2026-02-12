@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TransactionsIntegrationTest {
     
     private record TestTransactionRequest(
+            @JsonProperty("transaction_id") Object transactionId,
             @JsonProperty("account_id") Object accountId,
             @JsonProperty("amount") Object amount
     ) {}
@@ -52,17 +53,11 @@ public class TransactionsIntegrationTest {
         UUID transactionId = UUID.randomUUID();
         int amount = 50;
 
-        String body = """
-                {
-                  "transaction_id": "%s",
-                  "account_id": "%s",
-                  "amount": %d
-                }
-                """.formatted(transactionId, accountId, amount);
+        TestTransactionRequest request = new TestTransactionRequest(transactionId.toString(), accountId.toString(), amount);
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.transaction_id").value(transactionId.toString()))
                 .andExpect(jsonPath("$.account_id").value(accountId.toString()))
@@ -79,24 +74,22 @@ public class TransactionsIntegrationTest {
     @Test
     void canCreateAndReadTransactionsAndAccountsWithPositiveAmounts() throws Exception {
         UUID accountId = UUID.randomUUID();
+        UUID transactionId = UUID.randomUUID();
         int amount = (int) (Math.random() * 100) + 1;
 
-        TestTransactionRequest request = new TestTransactionRequest(accountId.toString(), amount);
+        TestTransactionRequest request = new TestTransactionRequest(transactionId.toString(), accountId.toString(), amount);
 
-        String responseJson = mockMvc.perform(post("/transactions")
+        mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.transaction_id").exists())
+                .andExpect(jsonPath("$.transaction_id").value(transactionId.toString()))
                 .andExpect(jsonPath("$.account_id").value(accountId.toString()))
-                .andExpect(jsonPath("$.amount").value(amount))
-                .andReturn().getResponse().getContentAsString();
-
-        String transactionId = objectMapper.readTree(responseJson).get("transaction_id").asText();
+                .andExpect(jsonPath("$.amount").value(amount));
 
         mockMvc.perform(get("/transactions/" + transactionId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.transaction_id").value(transactionId))
+                .andExpect(jsonPath("$.transaction_id").value(transactionId.toString()))
                 .andExpect(jsonPath("$.account_id").value(accountId.toString()))
                 .andExpect(jsonPath("$.amount").value(amount));
 
@@ -109,11 +102,13 @@ public class TransactionsIntegrationTest {
     @Test
     void canCreateAndReadTransactionsAndAccountsWithNegativeAmounts() throws Exception {
         UUID accountId = UUID.randomUUID();
+        UUID transactionId1 = UUID.randomUUID();
+        UUID transactionId2 = UUID.randomUUID();
         int initialAmount = (int) (Math.random() * 100) + 10;
         int negativeAmount = -((int) (Math.random() * 5) + 1);
 
         // Create first transaction
-        TestTransactionRequest request1 = new TestTransactionRequest(accountId.toString(), initialAmount);
+        TestTransactionRequest request1 = new TestTransactionRequest(transactionId1.toString(), accountId.toString(), initialAmount);
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -126,7 +121,7 @@ public class TransactionsIntegrationTest {
                 .andExpect(jsonPath("$.balance").value(initialAmount));
 
         // Create second transaction (negative)
-        TestTransactionRequest request2 = new TestTransactionRequest(accountId.toString(), negativeAmount);
+        TestTransactionRequest request2 = new TestTransactionRequest(transactionId2.toString(), accountId.toString(), negativeAmount);
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -156,17 +151,19 @@ public class TransactionsIntegrationTest {
     @Test
     void canFindAllTransactions() throws Exception {
         UUID accountId = UUID.randomUUID();
+        UUID transactionId1 = UUID.randomUUID();
+        UUID transactionId2 = UUID.randomUUID();
         int amount1 = 10;
         int amount2 = 20;
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new TestTransactionRequest(accountId.toString(), amount1))))
+                        .content(objectMapper.writeValueAsString(new TestTransactionRequest(transactionId1.toString(), accountId.toString(), amount1))))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new TestTransactionRequest(accountId.toString(), amount2))))
+                        .content(objectMapper.writeValueAsString(new TestTransactionRequest(transactionId2.toString(), accountId.toString(), amount2))))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(get("/transactions"))
@@ -223,23 +220,30 @@ public class TransactionsIntegrationTest {
     private static Stream<Arguments> invalidPostTransactionRequests() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         String accountId = UUID.randomUUID().toString();
+        String transactionId = UUID.randomUUID().toString();
         String badRequestDescription = "Mandatory body parameters missing or have incorrect type.";
 
-        var missingAccountId = new TestTransactionRequest(null, 7);
-        var missingAmount = new TestTransactionRequest(accountId, null);
-        var malformedUuid = new TestTransactionRequest("not-a-uuid", 7);
-        var stringAmount = new TestTransactionRequest(accountId, "high");
+        var missingTransactionId = new TestTransactionRequest(null, accountId, 7);
+        var missingAccountId = new TestTransactionRequest(transactionId, null, 7);
+        var missingAmount = new TestTransactionRequest(transactionId, accountId, null);
+        var malformedUuid = new TestTransactionRequest(transactionId, "not-a-uuid", 7);
+        var malformedTransactionId = new TestTransactionRequest("not-a-uuid", accountId, 7);
+        var stringAmount = new TestTransactionRequest(transactionId, accountId, "high");
 
         return Stream.of(
                 // 1. Wrong Content-Type
-                Arguments.of(MediaType.APPLICATION_XML_VALUE, "<request></request>", 415, null),
-                // 2. Missing account_id
+                Arguments.of(MediaType.APPLICATION_XML_VALUE, "<request></request>", 415, "Specified content type not allowed."),
+                // 2. Missing transaction_id (SHOULD BE 201 AS IT IS OPTIONAL)
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingTransactionId), 201, null),
+                // 3. Missing account_id
                 Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingAccountId), 400, badRequestDescription),
-                // 3. Missing amount
+                // 4. Missing amount
                 Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingAmount), 400, badRequestDescription),
-                // 4. Malformed UUID
+                // 5. Malformed UUID for account_id
                 Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(malformedUuid), 400, badRequestDescription),
-                // 5. String instead of integer for amount
+                // 6. Malformed UUID for transaction_id
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(malformedTransactionId), 400, badRequestDescription),
+                // 7. String instead of integer for amount
                 Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(stringAmount), 400, badRequestDescription)
         );
     }
