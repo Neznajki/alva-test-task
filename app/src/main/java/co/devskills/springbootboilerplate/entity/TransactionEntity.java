@@ -6,9 +6,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "transactions")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class TransactionEntity {
 
     @Id
@@ -23,46 +29,4 @@ public class TransactionEntity {
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
-
-    public TransactionEntity() {
-    }
-
-    public TransactionEntity(UUID transactionId, UUID accountId, Integer amount, OffsetDateTime createdAt) {
-        this.transactionId = transactionId;
-        this.accountId = accountId;
-        this.amount = amount;
-        this.createdAt = createdAt;
-    }
-
-    public UUID getTransactionId() {
-        return transactionId;
-    }
-
-    public void setTransactionId(UUID transactionId) {
-        this.transactionId = transactionId;
-    }
-
-    public UUID getAccountId() {
-        return accountId;
-    }
-
-    public void setAccountId(UUID accountId) {
-        this.accountId = accountId;
-    }
-
-    public Integer getAmount() {
-        return amount;
-    }
-
-    public void setAmount(Integer amount) {
-        this.amount = amount;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

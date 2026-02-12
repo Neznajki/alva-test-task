@@ -2,7 +2,13 @@ package co.devskills.springbootboilerplate.dto.account;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AccountResponse {
 
     @JsonProperty("account_id")
@@ -10,28 +16,4 @@ public class AccountResponse {
 
     @JsonProperty("balance")
     private Integer balance;
-
-    public AccountResponse() {
-    }
-
-    public AccountResponse(UUID accountId, Integer balance) {
-        this.accountId = accountId;
-        this.balance = balance;
-    }
-
-    public UUID getAccountId() {
-        return accountId;
-    }
-
-    public void setAccountId(UUID accountId) {
-        this.accountId = accountId;
-    }
-
-    public Integer getBalance() {
-        return balance;
-    }
-
-    public void setBalance(Integer balance) {
-        this.balance = balance;
-    }
 }
