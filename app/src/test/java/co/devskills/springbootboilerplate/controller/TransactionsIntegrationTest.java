@@ -141,11 +141,11 @@ public class TransactionsIntegrationTest {
 
         mockMvc.perform(get("/accounts/" + accountId))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Account not found."));
+                .andExpect(content().string("{\"description\":\"Account not found.\"}"));
 
         mockMvc.perform(get("/transactions/" + transactionId))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string("Transaction not found"));
+                .andExpect(content().string("{\"description\":\"Transaction not found\"}"));
     }
 
     @Test
@@ -182,8 +182,8 @@ public class TransactionsIntegrationTest {
 
     private static Stream<Arguments> invalidRequestWithDescription() {
         return Stream.of(
-                Arguments.of("transactions", "transaction_id missing or has incorrect type."),
-                Arguments.of("accounts", "account_id missing or has incorrect type.")
+                Arguments.of("transactions", "{\"description\":\"transaction_id missing or has incorrect type.\"}"),
+                Arguments.of("accounts", "{\"description\":\"account_id missing or has incorrect type.\"}")
         );
     }
 
@@ -221,7 +221,7 @@ public class TransactionsIntegrationTest {
         ObjectMapper objectMapper = new ObjectMapper();
         String accountId = UUID.randomUUID().toString();
         String transactionId = UUID.randomUUID().toString();
-        String badRequestDescription = "Mandatory body parameters missing or have incorrect type.";
+        String badRequestDescription = "{\"description\":\"Mandatory body parameters missing or have incorrect type.\"}";
 
         var missingTransactionId = new TestTransactionRequest(null, accountId, 7);
         var missingAccountId = new TestTransactionRequest(transactionId, null, 7);
@@ -232,7 +232,7 @@ public class TransactionsIntegrationTest {
 
         return Stream.of(
                 // 1. Wrong Content-Type
-                Arguments.of(MediaType.APPLICATION_XML_VALUE, "<request></request>", 415, "Specified content type not allowed."),
+                Arguments.of(MediaType.APPLICATION_XML_VALUE, "<request></request>", 415, "{\"description\":\"Specified content type not allowed.\"}"),
                 // 2. Missing transaction_id (SHOULD BE 201 AS IT IS OPTIONAL)
                 Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingTransactionId), 201, null),
                 // 3. Missing account_id
@@ -251,7 +251,7 @@ public class TransactionsIntegrationTest {
     private static Stream<Arguments> invalidPutTransactionRequests() {
         return Stream.of(
                 // 1. Wrong method (PUT on /transactions which only supports POST and GET)
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, "{}", 405, "Specified HTTP method not allowed.")
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, "{}", 405, "{\"description\":\"Specified HTTP method not allowed.\"}")
         );
     }
 }

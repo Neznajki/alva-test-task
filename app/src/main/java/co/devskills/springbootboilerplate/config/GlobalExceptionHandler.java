@@ -1,5 +1,6 @@
 package co.devskills.springbootboilerplate.config;
 
+import co.devskills.springbootboilerplate.dto.DescriptionResponse;
 import co.devskills.springbootboilerplate.exception.ItemNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,25 +19,25 @@ import org.springframework.web.context.request.WebRequest;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<String> handleValidationException(MethodArgumentNotValidException e) {
+    public ResponseEntity<DescriptionResponse> handleValidationException(MethodArgumentNotValidException e) {
         log.debug("Validation failed", e);
-        return ResponseEntity.badRequest().body("Mandatory body parameters missing or have incorrect type.");
+        return ResponseEntity.badRequest().body(new DescriptionResponse("Mandatory body parameters missing or have incorrect type."));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<String> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+    public ResponseEntity<DescriptionResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.debug("Message not readable", e);
-        return ResponseEntity.badRequest().body("Mandatory body parameters missing or have incorrect type.");
+        return ResponseEntity.badRequest().body(new DescriptionResponse("Mandatory body parameters missing or have incorrect type."));
     }
 
     @ExceptionHandler(ItemNotFoundException.class)
-    public ResponseEntity<String> handleItemNotFoundException(ItemNotFoundException e) {
+    public ResponseEntity<DescriptionResponse> handleItemNotFoundException(ItemNotFoundException e) {
         log.debug("item not found", e);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getResponseText());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new DescriptionResponse(e.getResponseText()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException e, WebRequest request) {
+    public ResponseEntity<DescriptionResponse> handleIllegalArgumentException(IllegalArgumentException e, WebRequest request) {
         log.error("Invalid request", e);
         String path = ((ServletWebRequest) request).getRequest().getRequestURI();
         String message = "Invalid request";
@@ -45,18 +46,18 @@ public class GlobalExceptionHandler {
         } else if (path.contains("/accounts/")) {
             message = "account_id missing or has incorrect type.";
         }
-        return ResponseEntity.badRequest().body(message);
+        return ResponseEntity.badRequest().body(new DescriptionResponse(message));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<String> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+    public ResponseEntity<DescriptionResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
         log.debug("Method not allowed", e);
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body("Specified HTTP method not allowed.");
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(new DescriptionResponse("Specified HTTP method not allowed."));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<String> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+    public ResponseEntity<DescriptionResponse> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
         log.debug("Content type not allowed", e);
-        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("Specified content type not allowed.");
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(new DescriptionResponse("Specified content type not allowed."));
     }
 }
