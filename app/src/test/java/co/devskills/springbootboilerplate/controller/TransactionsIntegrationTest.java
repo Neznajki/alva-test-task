@@ -26,6 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 public class TransactionsIntegrationTest {
+    
+    private record TestTransactionRequest(
+            @JsonProperty("account_id") Object accountId,
+            @JsonProperty("amount") Object amount
+    ) {}
 
     @Autowired
     private MockMvc mockMvc;
@@ -45,12 +50,7 @@ public class TransactionsIntegrationTest {
         UUID accountId = UUID.randomUUID();
         int amount = (int) (Math.random() * 100) + 1;
 
-        record TransactionRequest(
-                @JsonProperty("account_id") String accountId,
-                @JsonProperty("amount") Integer amount
-        ) {}
-
-        TransactionRequest request = new TransactionRequest(accountId.toString(), amount);
+        TestTransactionRequest request = new TestTransactionRequest(accountId.toString(), amount);
 
         String responseJson = mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -81,13 +81,8 @@ public class TransactionsIntegrationTest {
         int initialAmount = (int) (Math.random() * 100) + 10;
         int negativeAmount = -((int) (Math.random() * 5) + 1);
 
-        record TransactionRequest(
-                @JsonProperty("account_id") String accountId,
-                @JsonProperty("amount") Integer amount
-        ) {}
-
         // Create first transaction
-        TransactionRequest request1 = new TransactionRequest(accountId.toString(), initialAmount);
+        TestTransactionRequest request1 = new TestTransactionRequest(accountId.toString(), initialAmount);
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -100,7 +95,7 @@ public class TransactionsIntegrationTest {
                 .andExpect(jsonPath("$.balance").value(initialAmount));
 
         // Create second transaction (negative)
-        TransactionRequest request2 = new TransactionRequest(accountId.toString(), negativeAmount);
+        TestTransactionRequest request2 = new TestTransactionRequest(accountId.toString(), negativeAmount);
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -151,15 +146,10 @@ public class TransactionsIntegrationTest {
         ObjectMapper objectMapper = new ObjectMapper();
         String accountId = UUID.randomUUID().toString();
 
-        record InvalidTransactionRequest(
-                @JsonProperty("account_id") Object accountId,
-                @JsonProperty("amount") Object amount
-        ) {}
-
-        var missingAccountId = new InvalidTransactionRequest(null, 7);
-        var missingAmount = new InvalidTransactionRequest(accountId, null);
-        var malformedUuid = new InvalidTransactionRequest("not-a-uuid", 7);
-        var stringAmount = new InvalidTransactionRequest(accountId, "high");
+        var missingAccountId = new TestTransactionRequest(null, 7);
+        var missingAmount = new TestTransactionRequest(accountId, null);
+        var malformedUuid = new TestTransactionRequest("not-a-uuid", 7);
+        var stringAmount = new TestTransactionRequest(accountId, "high");
 
         return Stream.of(
                 // 1. Wrong Content-Type
