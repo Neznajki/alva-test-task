@@ -43,7 +43,7 @@ public class TransactionsIntegrationTest {
     void providesAFunctionalHealthcheck() throws Exception {
         mockMvc.perform(get("/ping"))
                 .andExpect(status().isOk())
-                .andExpect(content().string("pong"));
+                .andExpect(content().string("{\"description\":\"The service is up and running\"}"));
     }
 
     @Test
