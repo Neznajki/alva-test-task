@@ -40,12 +40,7 @@ public class TransactionsController {
 
     @GetMapping(value = "/transactions/{transaction_id}")
     public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable("transaction_id") String transactionIdStr) {
-        UUID transactionId;
-        try {
-            transactionId = UUID.fromString(transactionIdStr);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        UUID transactionId = UUID.fromString(transactionIdStr);
 
         return transactionService.getTransactionById(transactionId)
                 .map(ResponseEntity::ok)

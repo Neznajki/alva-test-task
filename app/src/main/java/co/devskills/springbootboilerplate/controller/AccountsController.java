@@ -19,15 +19,10 @@ public class AccountsController {
 
     @GetMapping(value = "/accounts/{account_id}")
     public ResponseEntity<AccountResponse> getAccountById(@PathVariable("account_id") String accountIdStr) {
-        UUID accountId;
-        try {
-            accountId = UUID.fromString(accountIdStr);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        UUID accountId = UUID.fromString(accountIdStr);
 
         return transactionService.getAccountById(accountId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 }
