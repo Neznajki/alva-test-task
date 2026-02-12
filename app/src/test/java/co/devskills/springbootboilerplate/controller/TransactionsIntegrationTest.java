@@ -15,6 +15,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
+
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -118,6 +120,35 @@ public class TransactionsIntegrationTest {
 
         mockMvc.perform(get("/transactions/" + transactionId))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void canFindAllTransactions() throws Exception {
+        UUID accountId = UUID.randomUUID();
+        int amount1 = 10;
+        int amount2 = 20;
+
+        mockMvc.perform(post("/transactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TestTransactionRequest(accountId.toString(), amount1))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/transactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new TestTransactionRequest(accountId.toString(), amount2))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/transactions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.[?(@.amount == %d)]", amount1).exists())
+                .andExpect(jsonPath("$.[?(@.amount == %d)]", amount2).exists());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"transactions", "accounts"})
+    void canHandleIllegalArgumentExceptionForInvalidTransactionId(String requestPath) throws Exception {
+        mockMvc.perform(get("/%s/invalid-uuid".formatted(requestPath)))
+                .andExpect(status().isBadRequest());
     }
 
     @ParameterizedTest
