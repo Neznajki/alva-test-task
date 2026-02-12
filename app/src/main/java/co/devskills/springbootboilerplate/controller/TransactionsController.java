@@ -24,8 +24,10 @@ public class TransactionsController {
 
     @PostMapping(value = "/transactions")
     public ResponseEntity<TransactionResponse> createTransaction(@RequestBody TransactionRequest request) {
-        if (request.getTransactionId() == null || request.getAccountId() == null || request.getAmount() == null) {
+        if (request.getAccountId() == null || request.getAmount() == null) {
             return ResponseEntity.badRequest().build();
+        } else if (request.getTransactionId() == null) {
+            request.setTransactionId(UUID.randomUUID());
         }
         TransactionResponse response = transactionService.createTransaction(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

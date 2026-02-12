@@ -48,7 +48,7 @@ public class TransactionService {
 
     public Optional<AccountResponse> getAccountById(UUID accountId) {
         Integer balance = transactionRepository.sumAmountByAccountId(accountId);
-        if (balance == null && transactionRepository.findByAccountId(accountId).isEmpty()) {
+        if ((balance == null || balance == 0) && transactionRepository.findByAccountId(accountId).isEmpty()) {
             return Optional.empty();
         }
         return Optional.of(new AccountResponse(accountId, balance != null ? balance : 0));
