@@ -37,7 +37,7 @@ public class TransactionsController {
     }
 
     @GetMapping(value = "/transactions/{transaction_id}")
-    public ResponseEntity<?> findById(@PathVariable("transaction_id") String transactionIdStr) {
+    public ResponseEntity<TransactionResponse> findById(@PathVariable("transaction_id") String transactionIdStr) {
         UUID transactionId = UUID.fromString(transactionIdStr);
 
         return transactionService.findById(transactionId)
