@@ -7,9 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,9 +45,12 @@ public class TransactionsIntegrationTest {
         UUID accountId = UUID.randomUUID();
         int amount = (int) (Math.random() * 100) + 1;
 
-        Map<String, Object> request = new HashMap<>();
-        request.put("account_id", accountId.toString());
-        request.put("amount", amount);
+        record TransactionRequest(
+                @JsonProperty("account_id") String accountId,
+                @JsonProperty("amount") Integer amount
+        ) {}
+
+        TransactionRequest request = new TransactionRequest(accountId.toString(), amount);
 
         String responseJson = mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -79,10 +81,13 @@ public class TransactionsIntegrationTest {
         int initialAmount = (int) (Math.random() * 100) + 10;
         int negativeAmount = -((int) (Math.random() * 5) + 1);
 
+        record TransactionRequest(
+                @JsonProperty("account_id") String accountId,
+                @JsonProperty("amount") Integer amount
+        ) {}
+
         // Create first transaction
-        Map<String, Object> request1 = new HashMap<>();
-        request1.put("account_id", accountId.toString());
-        request1.put("amount", initialAmount);
+        TransactionRequest request1 = new TransactionRequest(accountId.toString(), initialAmount);
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -95,9 +100,7 @@ public class TransactionsIntegrationTest {
                 .andExpect(jsonPath("$.balance").value(initialAmount));
 
         // Create second transaction (negative)
-        Map<String, Object> request2 = new HashMap<>();
-        request2.put("account_id", accountId.toString());
-        request2.put("amount", negativeAmount);
+        TransactionRequest request2 = new TransactionRequest(accountId.toString(), negativeAmount);
 
         mockMvc.perform(post("/transactions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -124,18 +127,10 @@ public class TransactionsIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("invalidPostTransactionRequests")
-    void canHandleInvalidPostRequests(String contentType, Map<String, Object> body, int expectedStatus) throws Exception {
+    void canHandleInvalidPostRequests(String contentType, String body, int expectedStatus) throws Exception {
         var requestBuilder = post("/transactions");
-
-        if (contentType != null) {
-            requestBuilder.contentType(MediaType.parseMediaType(contentType));
-        }
-
-        if (body != null) {
-            requestBuilder.content(objectMapper.writeValueAsString(body));
-        } else if (contentType != null && contentType.equals(MediaType.APPLICATION_XML_VALUE)) {
-            requestBuilder.content("<request></request>");
-        }
+        requestBuilder.contentType(MediaType.parseMediaType(contentType));
+        requestBuilder.content(body);
 
         mockMvc.perform(requestBuilder)
                 .andExpect(status().is(expectedStatus));
@@ -143,56 +138,47 @@ public class TransactionsIntegrationTest {
 
     @ParameterizedTest
     @MethodSource("invalidPutTransactionRequests")
-    void canHandleInvalidPutRequests(String contentType, Map<String, Object> body, int expectedStatus) throws Exception {
+    void canHandleInvalidPutRequests(String contentType, String body, int expectedStatus) throws Exception {
         var requestBuilder = put("/transactions");
-
-        if (contentType != null) {
-            requestBuilder.contentType(MediaType.parseMediaType(contentType));
-        }
-
-        if (body != null) {
-            requestBuilder.content(objectMapper.writeValueAsString(body));
-        }
+        requestBuilder.contentType(MediaType.parseMediaType(contentType));
+        requestBuilder.content(body);
 
         mockMvc.perform(requestBuilder)
                 .andExpect(status().is(expectedStatus));
     }
 
-    private static Stream<Arguments> invalidPostTransactionRequests() {
+    private static Stream<Arguments> invalidPostTransactionRequests() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
         String accountId = UUID.randomUUID().toString();
 
-        Map<String, Object> missingAccountId = new HashMap<>();
-        missingAccountId.put("amount", 7);
+        record InvalidTransactionRequest(
+                @JsonProperty("account_id") Object accountId,
+                @JsonProperty("amount") Object amount
+        ) {}
 
-        Map<String, Object> missingAmount = new HashMap<>();
-        missingAmount.put("account_id", accountId);
-
-        Map<String, Object> malformedUuid = new HashMap<>();
-        malformedUuid.put("account_id", "not-a-uuid");
-        malformedUuid.put("amount", 7);
-
-        Map<String, Object> stringAmount = new HashMap<>();
-        stringAmount.put("account_id", accountId);
-        stringAmount.put("amount", "high");
+        var missingAccountId = new InvalidTransactionRequest(null, 7);
+        var missingAmount = new InvalidTransactionRequest(accountId, null);
+        var malformedUuid = new InvalidTransactionRequest("not-a-uuid", 7);
+        var stringAmount = new InvalidTransactionRequest(accountId, "high");
 
         return Stream.of(
                 // 1. Wrong Content-Type
-                Arguments.of(MediaType.APPLICATION_XML_VALUE, null, 415),
+                Arguments.of(MediaType.APPLICATION_XML_VALUE, "<request></request>", 415),
                 // 2. Missing account_id
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, missingAccountId, 400),
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingAccountId), 400),
                 // 3. Missing amount
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, missingAmount, 400),
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingAmount), 400),
                 // 4. Malformed UUID
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, malformedUuid, 400),
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(malformedUuid), 400),
                 // 5. String instead of integer for amount
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, stringAmount, 400)
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(stringAmount), 400)
         );
     }
 
     private static Stream<Arguments> invalidPutTransactionRequests() {
         return Stream.of(
                 // 1. Wrong method (PUT on /transactions which only supports POST and GET)
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, new HashMap<>(), 405)
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, "{}", 405)
         );
     }
 }
