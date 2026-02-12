@@ -21,7 +21,7 @@ public class AccountsController {
     public ResponseEntity<AccountResponse> getAccountById(@PathVariable("account_id") String accountIdStr) {
         UUID accountId = UUID.fromString(accountIdStr);
 
-        return transactionService.getAccountById(accountId)
+        return transactionService.findAccountById(accountId)
             .map(ResponseEntity::ok)
             .orElse(ResponseEntity.notFound().build());
     }

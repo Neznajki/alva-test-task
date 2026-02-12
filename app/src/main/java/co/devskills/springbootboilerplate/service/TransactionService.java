@@ -24,29 +24,29 @@ public class TransactionService {
     }
 
     @Transactional
-    public TransactionResponse createTransaction(TransactionRequest request) {
+    public TransactionResponse create(TransactionRequest request) {
         TransactionEntity transactionEntity = new TransactionEntity(
-                request.getTransactionId(),
-                request.getAccountId(),
-                request.getAmount(),
+                request.transactionId(),
+                request.accountId(),
+                request.amount(),
                 OffsetDateTime.now(ZoneOffset.UTC)
         );
         TransactionEntity saved = transactionRepository.save(transactionEntity);
         return mapToResponse(saved);
     }
 
-    public List<TransactionResponse> getAllTransactions() {
+    public List<TransactionResponse> findAll() {
         return transactionRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    public Optional<TransactionResponse> getTransactionById(UUID transactionId) {
+    public Optional<TransactionResponse> findById(UUID transactionId) {
         return transactionRepository.findById(transactionId)
                 .map(this::mapToResponse);
     }
 
-    public Optional<AccountResponse> getAccountById(UUID accountId) {
+    public Optional<AccountResponse> findAccountById(UUID accountId) {
         Integer balance = transactionRepository.sumAmountByAccountId(accountId).orElse(0);
 
         if (balance == 0 && transactionRepository.findByAccountId(accountId).isEmpty()) {

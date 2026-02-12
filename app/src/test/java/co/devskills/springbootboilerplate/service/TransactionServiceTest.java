@@ -45,30 +45,27 @@ public class TransactionServiceTest {
     @ParameterizedTest
     @ValueSource(ints = {100, -50, 0})
     void createTransaction_ShouldSaveAndReturnResponse(int amount) {
-        TransactionRequest request = new TransactionRequest();
-        request.setTransactionId(transactionId);
-        request.setAccountId(accountId);
-        request.setAmount(amount);
+        TransactionRequest request = new TransactionRequest(transactionId, accountId, amount);
 
         TransactionEntity entity = new TransactionEntity(transactionId, accountId, amount, OffsetDateTime.now(ZoneOffset.UTC));
         when(transactionRepository.save(any(TransactionEntity.class))).thenReturn(entity);
 
-        TransactionResponse response = transactionService.createTransaction(request);
+        TransactionResponse response = transactionService.create(request);
 
-        assertEquals(transactionId, response.getTransactionId());
-        assertEquals(accountId, response.getAccountId());
-        assertEquals(amount, response.getAmount());
+        assertEquals(transactionId, response.transactionId());
+        assertEquals(accountId, response.accountId());
+        assertEquals(amount, response.amount());
     }
 
     @Test
     void getAccountById_ShouldReturnBalance_WhenTransactionsExist() {
         when(transactionRepository.sumAmountByAccountId(accountId)).thenReturn(Optional.of(150));
 
-        Optional<AccountResponse> response = transactionService.getAccountById(accountId);
+        Optional<AccountResponse> response = transactionService.findAccountById(accountId);
 
         assertTrue(response.isPresent());
-        assertEquals(accountId, response.get().getAccountId());
-        assertEquals(150, response.get().getBalance());
+        assertEquals(accountId, response.get().accountId());
+        assertEquals(150, response.get().balance());
     }
 
     @Test
@@ -76,7 +73,7 @@ public class TransactionServiceTest {
         when(transactionRepository.sumAmountByAccountId(accountId)).thenReturn(Optional.of(0));
         when(transactionRepository.findByAccountId(accountId)).thenReturn(Collections.emptyList());
 
-        Optional<AccountResponse> response = transactionService.getAccountById(accountId);
+        Optional<AccountResponse> response = transactionService.findAccountById(accountId);
 
         assertTrue(response.isEmpty());
     }

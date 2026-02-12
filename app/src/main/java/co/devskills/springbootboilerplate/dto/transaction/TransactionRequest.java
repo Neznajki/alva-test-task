@@ -2,17 +2,16 @@ package co.devskills.springbootboilerplate.dto.transaction;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
-import lombok.Data;
 
-@Data
-public class TransactionRequest {
-
-    @JsonProperty("transaction_id")
-    private UUID transactionId;
-
-    @JsonProperty("account_id")
-    private UUID accountId;
-
-    @JsonProperty("amount")
-    private Integer amount;
+public record TransactionRequest(
+    @JsonProperty("transaction_id") UUID transactionId,
+    @JsonProperty("account_id") UUID accountId,
+    @JsonProperty("amount") Integer amount
+) {
+    public TransactionRequest withGeneratedIdIfMissing() {
+        if (this.transactionId != null) {
+            return this;
+        }
+        return new TransactionRequest(UUID.randomUUID(), this.accountId, this.amount);
+    }
 }

@@ -23,26 +23,25 @@ public class TransactionsController {
     }
 
     @PostMapping(value = "/transactions")
-    public ResponseEntity<TransactionResponse> createTransaction(@RequestBody TransactionRequest request) {
-        if (request.getAccountId() == null || request.getAmount() == null) {
+    public ResponseEntity<TransactionResponse> create(@RequestBody TransactionRequest request) {
+        if (request.accountId() == null || request.amount() == null) {
             return ResponseEntity.badRequest().build();
-        } else if (request.getTransactionId() == null) {
-            request.setTransactionId(UUID.randomUUID());
         }
-        TransactionResponse response = transactionService.createTransaction(request);
+
+        TransactionResponse response = transactionService.create(request.withGeneratedIdIfMissing());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping(value = "/transactions")
-    public ResponseEntity<List<TransactionResponse>> getAllTransactions() {
-        return ResponseEntity.ok(transactionService.getAllTransactions());
+    public ResponseEntity<List<TransactionResponse>> findAll() {
+        return ResponseEntity.ok(transactionService.findAll());
     }
 
     @GetMapping(value = "/transactions/{transaction_id}")
-    public ResponseEntity<TransactionResponse> getTransactionById(@PathVariable("transaction_id") String transactionIdStr) {
+    public ResponseEntity<TransactionResponse> findById(@PathVariable("transaction_id") String transactionIdStr) {
         UUID transactionId = UUID.fromString(transactionIdStr);
 
-        return transactionService.getTransactionById(transactionId)
+        return transactionService.findById(transactionId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
