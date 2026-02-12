@@ -16,7 +16,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -146,10 +145,12 @@ public class TransactionsIntegrationTest {
         UUID transactionId = UUID.randomUUID();
 
         mockMvc.perform(get("/accounts/" + accountId))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Account not found."));
 
         mockMvc.perform(get("/transactions/" + transactionId))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Transaction not found"));
     }
 
     @Test
@@ -175,37 +176,54 @@ public class TransactionsIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"transactions", "accounts"})
-    void canHandleIllegalArgumentExceptionForInvalidTransactionId(String requestPath) throws Exception {
+    @MethodSource("invalidRequestWithDescription")
+    void canHandleIllegalArgumentExceptionForInvalidTransactionId(String requestPath, String expectedDescription) throws Exception {
         mockMvc.perform(get("/%s/invalid-uuid".formatted(requestPath)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(expectedDescription));
+    }
+
+    private static Stream<Arguments> invalidRequestWithDescription() {
+        return Stream.of(
+                Arguments.of("transactions", "transaction_id missing or has incorrect type."),
+                Arguments.of("accounts", "account_id missing or has incorrect type.")
+        );
     }
 
     @ParameterizedTest
     @MethodSource("invalidPostTransactionRequests")
-    void canHandleInvalidPostRequests(String contentType, String body, int expectedStatus) throws Exception {
+    void canHandleInvalidPostRequests(String contentType, String body, int expectedStatus, String expectedDescription) throws Exception {
         var requestBuilder = post("/transactions");
         requestBuilder.contentType(MediaType.parseMediaType(contentType));
         requestBuilder.content(body);
 
-        mockMvc.perform(requestBuilder)
+        var resultActions = mockMvc.perform(requestBuilder)
                 .andExpect(status().is(expectedStatus));
+
+        if (expectedDescription != null) {
+            resultActions.andExpect(content().string(expectedDescription));
+        }
     }
 
     @ParameterizedTest
     @MethodSource("invalidPutTransactionRequests")
-    void canHandleInvalidPutRequests(String contentType, String body, int expectedStatus) throws Exception {
+    void canHandleInvalidPutRequests(String contentType, String body, int expectedStatus, String expectedDescription) throws Exception {
         var requestBuilder = put("/transactions");
         requestBuilder.contentType(MediaType.parseMediaType(contentType));
         requestBuilder.content(body);
 
-        mockMvc.perform(requestBuilder)
+        var resultActions = mockMvc.perform(requestBuilder)
                 .andExpect(status().is(expectedStatus));
+
+        if (expectedDescription != null) {
+            resultActions.andExpect(content().string(expectedDescription));
+        }
     }
 
     private static Stream<Arguments> invalidPostTransactionRequests() throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         String accountId = UUID.randomUUID().toString();
+        String badRequestDescription = "Mandatory body parameters missing or have incorrect type.";
 
         var missingAccountId = new TestTransactionRequest(null, 7);
         var missingAmount = new TestTransactionRequest(accountId, null);
@@ -214,22 +232,22 @@ public class TransactionsIntegrationTest {
 
         return Stream.of(
                 // 1. Wrong Content-Type
-                Arguments.of(MediaType.APPLICATION_XML_VALUE, "<request></request>", 415),
+                Arguments.of(MediaType.APPLICATION_XML_VALUE, "<request></request>", 415, null),
                 // 2. Missing account_id
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingAccountId), 400),
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingAccountId), 400, badRequestDescription),
                 // 3. Missing amount
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingAmount), 400),
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(missingAmount), 400, badRequestDescription),
                 // 4. Malformed UUID
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(malformedUuid), 400),
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(malformedUuid), 400, badRequestDescription),
                 // 5. String instead of integer for amount
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(stringAmount), 400)
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, objectMapper.writeValueAsString(stringAmount), 400, badRequestDescription)
         );
     }
 
     private static Stream<Arguments> invalidPutTransactionRequests() {
         return Stream.of(
                 // 1. Wrong method (PUT on /transactions which only supports POST and GET)
-                Arguments.of(MediaType.APPLICATION_JSON_VALUE, "{}", 405)
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, "{}", 405, "Specified HTTP method not allowed.")
         );
     }
 }

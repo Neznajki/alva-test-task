@@ -1,6 +1,7 @@
 package co.devskills.springbootboilerplate.controller;
 
 import co.devskills.springbootboilerplate.dto.account.AccountResponse;
+import co.devskills.springbootboilerplate.exception.ItemNotFoundException;
 import co.devskills.springbootboilerplate.service.TransactionService;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,6 @@ public class AccountsController {
 
         return transactionService.findAccountById(accountId)
             .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
+            .orElseThrow(() -> new ItemNotFoundException("Account not found."));
     }
 }

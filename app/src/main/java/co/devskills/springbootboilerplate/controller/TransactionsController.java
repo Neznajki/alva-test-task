@@ -2,6 +2,7 @@ package co.devskills.springbootboilerplate.controller;
 
 import co.devskills.springbootboilerplate.dto.transaction.TransactionRequest;
 import co.devskills.springbootboilerplate.dto.transaction.TransactionResponse;
+import co.devskills.springbootboilerplate.exception.ItemNotFoundException;
 import co.devskills.springbootboilerplate.helper.TransactionRequestHelper;
 import co.devskills.springbootboilerplate.service.TransactionService;
 import jakarta.validation.Valid;
@@ -36,11 +37,11 @@ public class TransactionsController {
     }
 
     @GetMapping(value = "/transactions/{transaction_id}")
-    public ResponseEntity<TransactionResponse> findById(@PathVariable("transaction_id") String transactionIdStr) {
+    public ResponseEntity<?> findById(@PathVariable("transaction_id") String transactionIdStr) {
         UUID transactionId = UUID.fromString(transactionIdStr);
 
         return transactionService.findById(transactionId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+            .map(ResponseEntity::ok)
+            .orElseThrow(() -> new ItemNotFoundException("Transaction not found"));
     }
 }
