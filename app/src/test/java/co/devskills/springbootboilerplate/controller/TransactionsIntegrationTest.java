@@ -123,13 +123,9 @@ public class TransactionsIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("invalidTransactionRequests")
-    void canHandleInvalidRequests(String method, String contentType, Map<String, Object> body, int expectedStatus) throws Exception {
-        var requestBuilder = switch (method) {
-            case "POST" -> post("/transactions");
-            case "PUT" -> put("/transactions");
-            default -> throw new IllegalArgumentException("Unsupported method: " + method);
-        };
+    @MethodSource("invalidPostTransactionRequests")
+    void canHandleInvalidPostRequests(String contentType, Map<String, Object> body, int expectedStatus) throws Exception {
+        var requestBuilder = post("/transactions");
 
         if (contentType != null) {
             requestBuilder.contentType(MediaType.parseMediaType(contentType));
@@ -145,9 +141,26 @@ public class TransactionsIntegrationTest {
                 .andExpect(status().is(expectedStatus));
     }
 
-    private static Stream<Arguments> invalidTransactionRequests() {
+    @ParameterizedTest
+    @MethodSource("invalidPutTransactionRequests")
+    void canHandleInvalidPutRequests(String contentType, Map<String, Object> body, int expectedStatus) throws Exception {
+        var requestBuilder = put("/transactions");
+
+        if (contentType != null) {
+            requestBuilder.contentType(MediaType.parseMediaType(contentType));
+        }
+
+        if (body != null) {
+            requestBuilder.content(objectMapper.writeValueAsString(body));
+        }
+
+        mockMvc.perform(requestBuilder)
+                .andExpect(status().is(expectedStatus));
+    }
+
+    private static Stream<Arguments> invalidPostTransactionRequests() {
         String accountId = UUID.randomUUID().toString();
-        
+
         Map<String, Object> missingAccountId = new HashMap<>();
         missingAccountId.put("amount", 7);
 
@@ -163,18 +176,23 @@ public class TransactionsIntegrationTest {
         stringAmount.put("amount", "high");
 
         return Stream.of(
-                // 1. Wrong method
-                Arguments.of("PUT", MediaType.APPLICATION_JSON_VALUE, new HashMap<>(), 405),
-                // 2. Wrong Content-Type
-                Arguments.of("POST", MediaType.APPLICATION_XML_VALUE, null, 415),
-                // 3. Missing account_id
-                Arguments.of("POST", MediaType.APPLICATION_JSON_VALUE, missingAccountId, 400),
-                // 4. Missing amount
-                Arguments.of("POST", MediaType.APPLICATION_JSON_VALUE, missingAmount, 400),
-                // 5. Malformed UUID
-                Arguments.of("POST", MediaType.APPLICATION_JSON_VALUE, malformedUuid, 400),
-                // 6. String instead of integer for amount
-                Arguments.of("POST", MediaType.APPLICATION_JSON_VALUE, stringAmount, 400)
+                // 1. Wrong Content-Type
+                Arguments.of(MediaType.APPLICATION_XML_VALUE, null, 415),
+                // 2. Missing account_id
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, missingAccountId, 400),
+                // 3. Missing amount
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, missingAmount, 400),
+                // 4. Malformed UUID
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, malformedUuid, 400),
+                // 5. String instead of integer for amount
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, stringAmount, 400)
+        );
+    }
+
+    private static Stream<Arguments> invalidPutTransactionRequests() {
+        return Stream.of(
+                // 1. Wrong method (PUT on /transactions which only supports POST and GET)
+                Arguments.of(MediaType.APPLICATION_JSON_VALUE, new HashMap<>(), 405)
         );
     }
 }
