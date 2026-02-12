@@ -48,6 +48,36 @@ public class TransactionsIntegrationTest {
     }
 
     @Test
+    void canCreateTransactionWithExplicitId() throws Exception {
+        UUID accountId = UUID.randomUUID();
+        UUID transactionId = UUID.randomUUID();
+        int amount = 50;
+
+        String body = """
+                {
+                  "transaction_id": "%s",
+                  "account_id": "%s",
+                  "amount": %d
+                }
+                """.formatted(transactionId, accountId, amount);
+
+        mockMvc.perform(post("/transactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.transaction_id").value(transactionId.toString()))
+                .andExpect(jsonPath("$.account_id").value(accountId.toString()))
+                .andExpect(jsonPath("$.amount").value(amount));
+
+        // Verify it can be retrieved by that ID
+        mockMvc.perform(get("/transactions/" + transactionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.transaction_id").value(transactionId.toString()))
+                .andExpect(jsonPath("$.account_id").value(accountId.toString()))
+                .andExpect(jsonPath("$.amount").value(amount));
+    }
+
+    @Test
     void canCreateAndReadTransactionsAndAccountsWithPositiveAmounts() throws Exception {
         UUID accountId = UUID.randomUUID();
         int amount = (int) (Math.random() * 100) + 1;
