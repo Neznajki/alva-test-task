@@ -8,10 +8,5 @@ public record TransactionRequest(
     @JsonProperty("account_id") UUID accountId,
     @JsonProperty("amount") Integer amount
 ) {
-    public TransactionRequest withGeneratedIdIfMissing() {
-        if (this.transactionId != null) {
-            return this;
-        }
-        return new TransactionRequest(UUID.randomUUID(), this.accountId, this.amount);
-    }
+
 }

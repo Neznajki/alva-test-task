@@ -2,6 +2,7 @@ package co.devskills.springbootboilerplate.controller;
 
 import co.devskills.springbootboilerplate.dto.transaction.TransactionRequest;
 import co.devskills.springbootboilerplate.dto.transaction.TransactionResponse;
+import co.devskills.springbootboilerplate.helper.TransactionRequestHelper;
 import co.devskills.springbootboilerplate.service.TransactionService;
 import java.util.List;
 import java.util.UUID;
@@ -28,7 +29,7 @@ public class TransactionsController {
             return ResponseEntity.badRequest().build();
         }
 
-        TransactionResponse response = transactionService.create(request.withGeneratedIdIfMissing());
+        TransactionResponse response = transactionService.create(TransactionRequestHelper.withGeneratedIdIfMissing(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
