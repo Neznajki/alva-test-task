@@ -4,6 +4,7 @@ import co.devskills.springbootboilerplate.dto.transaction.TransactionRequest;
 import co.devskills.springbootboilerplate.dto.transaction.TransactionResponse;
 import co.devskills.springbootboilerplate.helper.TransactionRequestHelper;
 import co.devskills.springbootboilerplate.service.TransactionService;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
@@ -24,11 +25,7 @@ public class TransactionsController {
     }
 
     @PostMapping(value = "/transactions")
-    public ResponseEntity<TransactionResponse> create(@RequestBody TransactionRequest request) {
-        if (request.accountId() == null || request.amount() == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
+    public ResponseEntity<TransactionResponse> create(@Valid @RequestBody TransactionRequest request) {
         TransactionResponse response = transactionService.create(TransactionRequestHelper.withGeneratedIdIfMissing(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
