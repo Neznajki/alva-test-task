@@ -1,0 +1,67 @@
+package co.devskills.springbootboilerplate.service;
+
+import co.devskills.springbootboilerplate.dto.account.AccountResponse;
+import co.devskills.springbootboilerplate.dto.transaction.TransactionRequest;
+import co.devskills.springbootboilerplate.dto.transaction.TransactionResponse;
+import co.devskills.springbootboilerplate.entity.TransactionEntity;
+import co.devskills.springbootboilerplate.repository.TransactionRepository;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class TransactionService {
+
+    private final TransactionRepository transactionRepository;
+
+    public TransactionService(TransactionRepository transactionRepository) {
+        this.transactionRepository = transactionRepository;
+    }
+
+    @Transactional
+    public TransactionResponse create(TransactionRequest request) {
+        TransactionEntity transactionEntity = new TransactionEntity(
+                request.transactionId(),
+                request.accountId(),
+                request.amount(),
+                OffsetDateTime.now(ZoneOffset.UTC)
+        );
+        TransactionEntity saved = transactionRepository.save(transactionEntity);
+        return mapToResponse(saved);
+    }
+
+    public List<TransactionResponse> findAll() {
+        return transactionRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public Optional<TransactionResponse> findById(UUID transactionId) {
+        return transactionRepository.findById(transactionId)
+                .map(this::mapToResponse);
+    }
+
+    public Optional<AccountResponse> findAccountById(UUID accountId) {
+        Integer balance = transactionRepository.sumAmountByAccountId(accountId).orElse(0);
+
+        if (balance == 0 && transactionRepository.findByAccountId(accountId).isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new AccountResponse(accountId, balance));
+    }
+
+    private TransactionResponse mapToResponse(TransactionEntity transactionEntity) {
+        return new TransactionResponse(
+                transactionEntity.getTransactionId(),
+                transactionEntity.getAccountId(),
+                transactionEntity.getAmount(),
+                transactionEntity.getCreatedAt()
+        );
+    }
+}

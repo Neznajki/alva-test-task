@@ -2,8 +2,8 @@
   "name": "account-management-backend-level-2",
   "version": "1.0.0",
   "scripts": {
-    "build": "echo build your app here",
-    "start": "echo start your app here",
+    "build": "cd app && ./gradlew build",
+    "start": "java -jar app/build/libs/spring-boot-boilerplate-0.0.1-SNAPSHOT-plain.jar",
     "test": "cypress run"
   },
   "devDependencies": {
